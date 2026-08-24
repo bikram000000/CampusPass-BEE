@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusPass | Campus events, simplified</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="navbar" class="navbar hidden">
+    <a href="#" class="brand" data-page="home"><span>CP</span> CampusPass</a>
+    <div class="nav-links">
+      <a href="#" data-page="home">Home</a>
+      <a href="#" data-page="events">Browse Events</a>
+      <a href="#" data-page="tickets" id="ticketLink">My Tickets</a>
+      <a href="#" data-page="post" id="postLink">Post Event</a>
+      <a href="#" data-page="my-events" id="myEventsLink">My Events</a>
+      <button id="profileButton" class="profile-button">👤 <span>Profile</span></button>
+      <button id="logoutButton" class="logout-button">Log out</button>
+    </div>
+  </nav>
+
+  <main id="app"></main>
+  <div id="profileBox" class="profile-box hidden"></div>
+  <div id="toast" class="toast"></div>
+
+  <div id="mobileNav" class="mobile-nav hidden">
+    <button data-page="home">⌂<span>Home</span></button>
+    <button data-page="events">⌕<span>Explore</span></button>
+    <button data-page="tickets" id="mobileTicket">🎟<span>Tickets</span></button>
+    <button data-page="post" id="mobilePost">＋<span>Post</span></button>
+    <button data-page="my-events" id="mobileMyEvents">▣<span>My Events</span></button>
+  </div>
+
+  <script src="js/00_globals.js"></script>
+  <script src="js/01_storage.js"></script>
+  <script src="js/02_data.js"></script>
+  <script src="js/03_helpers.js"></script>
+  <script src="js/04_auth.js"></script>
+  <script src="js/05_event_cards.js"></script>
+  <script src="js/06_home.js"></script>
+  <script src="js/07_browse_events.js"></script>
+  <script src="js/08_event_details.js"></script>
+  <script src="js/09_student_booking.js"></script>
+  <script src="js/10_student_tickets.js"></script>
+  <script src="js/11_faculty_post.js"></script>
+  <script src="js/12_faculty_events.js"></script>
+  <script src="js/13_fetch_api.js"></script>
+  <script src="js/14_navigation.js"></script>
+  <script src="js/15_nav_actions.js"></script>
+  <script src="js/16_app_start.js"></script>
+</body>
+</html>
