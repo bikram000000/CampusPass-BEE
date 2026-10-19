@@ -1,21 +1,3 @@
-// 11. FACULTY - POST EVENT
-// ------------------------------------------------------------
-function fileToImage(file) {
-  return new Promise(function (resolve, reject) {
-    const reader = new FileReader();
-
-    reader.onload = function () {
-      resolve(reader.result);
-    };
-
-    reader.onerror = function () {
-      reject(new Error('Image could not be read.'));
-    };
-
-    reader.readAsDataURL(file);
-  });
-}
-
 function eventFormHtml(event) {
   const item = event || {};
 
@@ -47,18 +29,16 @@ function eventFormHtml(event) {
         <input id="eventSeats" type="number" min="1" value="${item.seats || ''}" placeholder="50">
       </label>
       <label>Entry Fee
-        <input id="eventPrice" type="number" min="0" value="${item.price ?? ''}" placeholder="0">
+        <input id="eventPrice" type="number" min="0" value="${item.price === undefined ? '' : item.price}" placeholder="0">
       </label>
-      <label>Cover Image
-        <input id="eventImage" type="file" accept="image/png, image/jpeg, image/webp">
-      </label>
+
     </div>
 
     <label>Event Description
       <textarea id="eventDescription" rows="4" placeholder="Tell students about this event">${escapeText(item.description || '')}</textarea>
     </label>
 
-    <p class="upload-note">Image is optional and should be smaller than 2 MB.</p>
+    <p class="upload-note">Your event gets a campus-inspired cover automatically.</p>
     <p id="postError" class="error"></p>`;
 }
 
@@ -71,8 +51,7 @@ function readEventForm() {
     venue: document.getElementById('eventVenue').value.trim(),
     seats: Number(document.getElementById('eventSeats').value),
     price: Number(document.getElementById('eventPrice').value),
-    description: document.getElementById('eventDescription').value.trim(),
-    imageFile: document.getElementById('eventImage').files[0]
+    description: document.getElementById('eventDescription').value.trim()
   };
 }
 
@@ -91,10 +70,6 @@ function validateEventForm(data, currentBooked) {
 
   if (data.price < 0) {
     return 'Entry fee cannot be negative.';
-  }
-
-  if (data.imageFile && data.imageFile.size > 2 * 1024 * 1024) {
-    return 'Please choose an image smaller than 2 MB.';
   }
 
   return '';
@@ -126,41 +101,14 @@ function showPostEvent() {
       return;
     }
 
-    let image = 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1000&q=80';
-
-    if (data.imageFile) {
-      try {
-        image = await fileToImage(data.imageFile);
-      } catch (fileError) {
-        error.textContent = 'Image could not be uploaded.';
-        return;
-      }
-    }
-
-    const events = getEvents();
-
-    const newEvent = {
-      id: Date.now(),
-      title: data.title,
-      category: data.category,
-      date: data.date,
-      time: data.time,
-      venue: data.venue,
-      seats: data.seats,
-      booked: 0,
-      price: data.price,
-      description: data.description,
-      organizer: currentUser.name,
-      ownerEmail: currentUser.email,
-      image: image,
-      questions: ['Are you a Hostel student or Day Scholar?', 'Do you have any special requirements?']
-    };
-
-    events.push(newEvent);
-    saveEvents(events);
-    showToast('Event posted successfully.');
-    showMyEvents();
+    const button = formEvent.target.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await api('/events', 'POST', data);
+      await refreshData();
+      showToast('Your event is live.');
+      showMyEvents();
+    } catch (failure) { error.textContent = failure.message; }
+    button.disabled = false;
   });
 }
-
-// ------------------------------------------------------------

@@ -11,6 +11,7 @@ function showMyEvents() {
     <p class="eyebrow">Faculty Dashboard</p>
     <h1 class="section-title">My Events</h1>
     <p class="section-subtitle">Manage events created by your faculty account.</p>
+    <div class="stats-grid"><div><small>MY EVENTS</small><strong>${myEvents.length}</strong></div><div><small>PASSES BOOKED</small><strong>${myEvents.reduce((total, event) => total + event.booked, 0)}</strong></div><div><small>UPCOMING</small><strong>${myEvents.filter(isBookable).length}</strong></div></div>
     <div class="event-grid" id="myEventList"></div>`;
 
   const list = document.getElementById('myEventList');
@@ -38,6 +39,29 @@ function showMyEvents() {
     });
 
     card.querySelector('.event-body').appendChild(editButton);
+    editButton.disabled = event.status === 'cancelled';
+    const attendees = document.createElement('button');
+    attendees.className = 'secondary-button'; attendees.textContent = 'Attendees & check-in';
+    attendees.addEventListener('click', function () { showAttendees(event.id); });
+    card.querySelector('.event-body').appendChild(attendees);
+    if (isBookable(event)) {
+      const cancel = document.createElement('button'); cancel.className = 'danger-button'; cancel.textContent = 'Cancel event';
+      cancel.addEventListener('click', function () { showCancelEvent(event.id); });
+      card.querySelector('.event-body').appendChild(cancel);
+    }
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'danger-button';
+    deleteButton.textContent = 'Delete Event';
+    deleteButton.addEventListener('click', async function () {
+      if (!confirm('Delete this event? Events with active bookings cannot be deleted.')) return;
+      try {
+        await api('/events/' + event.id, 'DELETE');
+        await refreshData();
+        showToast('Event deleted.');
+        showMyEvents();
+      } catch (error) { showToast(error.message, true); }
+    });
+    card.querySelector('.event-body').appendChild(deleteButton);
     list.appendChild(card);
   });
 }
@@ -76,39 +100,14 @@ function showEditEvent(id) {
       return;
     }
 
-    let image = event.image;
-
-    if (data.imageFile) {
-      try {
-        image = await fileToImage(data.imageFile);
-      } catch (fileError) {
-        error.textContent = 'Image could not be uploaded.';
-        return;
-      }
-    }
-
-    const events = getEvents();
-    const index = events.findIndex(function (item) {
-      return item.id === event.id;
-    });
-
-    events[index] = {
-      ...event,
-      title: data.title,
-      category: data.category,
-      date: data.date,
-      time: data.time,
-      venue: data.venue,
-      seats: data.seats,
-      price: data.price,
-      description: data.description,
-      image: image
-    };
-
-    saveEvents(events);
-    showToast('Event updated successfully.');
-    showMyEvents();
+    const button = formEvent.target.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await api('/events/' + event.id, 'PUT', data);
+      await refreshData();
+      showToast('Event updated.');
+      showMyEvents();
+    } catch (failure) { error.textContent = failure.message; }
+    button.disabled = false;
   });
 }
-
-// ------------------------------------------------------------

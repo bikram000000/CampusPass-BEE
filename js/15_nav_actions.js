@@ -1,15 +1,10 @@
-// 15. NAV BUTTONS + LOGOUT
-// ------------------------------------------------------------
-document.getElementById('profileButton').addEventListener('click', showProfile);
-
-document.getElementById('logoutButton').addEventListener('click', function () {
-  localStorage.removeItem('campusPassUser');
-  sessionStorage.clear();
-  currentUser = null;
-  selectedEventId = null;
-  bookingData = {};
-  clearInterval(countdownTimer);
-  showLogin();
+document.getElementById('profileButton').addEventListener('click', function () { changePage('account'); });
+document.getElementById('logoutButton').addEventListener('click', async function () {
+  try {
+    await api('/auth/logout', 'POST');
+    sessionStorage.clear();
+    currentUser = null; eventCache = []; ticketCache = []; bookingData = {};
+    clearInterval(countdownTimer);
+    showLogin();
+  } catch (error) { showToast(error.message, true); }
 });
-
-// ------------------------------------------------------------

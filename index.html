@@ -12,7 +12,8 @@
     <div class="nav-links">
       <a href="#" data-page="home">Home</a>
       <a href="#" data-page="events">Browse Events</a>
-      <a href="#" data-page="tickets" id="ticketLink">My Tickets</a>
+      <a href="#" data-page="saved">Wishlist</a>
+      <a href="#" data-page="tickets" id="ticketLink">My Bookings</a>
       <a href="#" data-page="post" id="postLink">Post Event</a>
       <a href="#" data-page="my-events" id="myEventsLink">My Events</a>
       <button id="profileButton" class="profile-button">👤 <span>Profile</span></button>
@@ -22,11 +23,12 @@
 
   <main id="app"></main>
   <div id="profileBox" class="profile-box hidden"></div>
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <div id="mobileNav" class="mobile-nav hidden">
     <button data-page="home">⌂<span>Home</span></button>
     <button data-page="events">⌕<span>Explore</span></button>
+    <button data-page="saved">♡<span>Saved</span></button>
     <button data-page="tickets" id="mobileTicket">🎟<span>Tickets</span></button>
     <button data-page="post" id="mobilePost">＋<span>Post</span></button>
     <button data-page="my-events" id="mobileMyEvents">▣<span>My Events</span></button>
@@ -48,6 +50,7 @@
   <script src="js/13_fetch_api.js"></script>
   <script src="js/14_navigation.js"></script>
   <script src="js/15_nav_actions.js"></script>
+  <script src="js/17_experience.js"></script>
   <script src="js/16_app_start.js"></script>
 </body>
 </html>

@@ -1,206 +1,62 @@
-// 9. STUDENT APPLICATION - form validation
-// ------------------------------------------------------------
+// Two-step booking using sessionStorage drafts and REST calls.
 function showBookingStepOne(id) {
   const event = findEvent(id);
   if (!event || currentUser.role !== 'student') return;
-
-  bookingData = getSession('bookingData', {});
-  bookingData.eventId = event.id;
-
+  if (!isBookable(event) || availableSeats(event) < 1) { showToast('This event is not accepting bookings.', true); return; }
+  const saved = getSession('bookingDraft:' + currentUser.email, {});
+  bookingData = saved.eventId === event.id ? saved : { eventId: event.id, quantity: 1 };
+  window.scrollTo(0, 0);
   app.innerHTML = `
-    <section class="form-card">
-      <div class="steps">
-        <span class="active">1. Your Details</span>
-        <span>2. Ticket</span>
-      </div>
-
-      <p class="eyebrow">Applying for ${escapeText(event.title)}</p>
-      <h1 class="section-title">Student Details</h1>
-      <form id="bookingOne">
-        <div class="form-grid">
-          <label>Full Name
-            <input id="bookName" value="${escapeText(bookingData.name || currentUser.name)}">
-          </label>
-          <label>College Email
-            <input id="bookEmail" type="email" value="${escapeText(bookingData.email || currentUser.email)}">
-          </label>
-          <label>Phone Number
-            <input id="bookPhone" placeholder="10 digit mobile number" value="${escapeText(bookingData.phone || '')}">
-          </label>
-          <label>Student ID
-            <input id="bookStudentId" placeholder="Example: 2026BCA001" value="${escapeText(bookingData.studentId || '')}">
-          </label>
-          <label>Department
-            <input id="bookDepartment" value="${escapeText(bookingData.department || currentUser.department)}">
-          </label>
-          <label>Year
-            <select id="bookYear">
-              <option value="">Select year</option>
-              <option>1st Year</option>
-              <option>2nd Year</option>
-              <option>3rd Year</option>
-              <option>4th Year</option>
-            </select>
-          </label>
-        </div>
-        <p id="bookingError" class="error"></p>
-        <button class="primary-button" type="submit">Apply for Event</button>
-      </form>
-    </section>`;
-
+    <div class="booking-layout"><section class="form-card"><div class="steps"><span class="active">01 / Your passes</span><span>02 / Review & confirm</span></div><p class="eyebrow">LET'S MAKE IT A PLAN</p><h1 class="section-title">Who's coming?</h1>
+    <form id="bookingOne"><div class="form-grid">
+      <label>Full name<input id="bookName" required maxlength="80" value="${escapeText(bookingData.name || currentUser.name)}"></label>
+      <label>Account email<input type="email" readonly value="${escapeText(currentUser.email)}"></label>
+      <label>Phone number<input id="bookPhone" type="tel" required maxlength="10" placeholder="10 digits" value="${escapeText(bookingData.phone || '')}"></label>
+      <label>Student ID<input id="bookStudentId" required minlength="5" maxlength="40" value="${escapeText(bookingData.studentId || '')}"></label>
+      <label>Department<input id="bookDepartment" required maxlength="80" value="${escapeText(bookingData.department || currentUser.department)}"></label>
+      <label>Year<select id="bookYear" required><option value="">Select year</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select></label>
+      <label>Number of passes<select id="bookQuantity">${[1,2,3,4].filter(quantity => quantity <= availableSeats(event)).map(quantity => '<option value="' + quantity + '">' + quantity + (quantity === 1 ? ' pass' : ' passes') + '</option>').join('')}</select></label>
+    </div><p class="upload-note">General admission. All guests enter together with the booking holder and a valid campus ID.</p><p class="error" id="bookingError" role="alert"></p><button class="primary-button" type="submit">Review booking →</button><button class="secondary-button" type="button" data-details="${event.id}">Back</button></form></section>
+    <aside class="order-summary"><p class="eyebrow">YOUR NEXT EXPERIENCE</p><h2>${escapeText(event.title)}</h2><p>${formatDate(event.date)} · ${event.time}</p><p>${escapeText(event.venue)}</p><hr><p>${event.price === 0 ? 'Free entry' : money(event.price) + ' per pass'}</p><p>${availableSeats(event)} passes remaining</p><small>No seat numbers. No real payments. Just your next campus plan.</small></aside></div>`;
   document.getElementById('bookYear').value = bookingData.year || '';
-
-  document.getElementById('bookingOne').addEventListener('submit', function (formEvent) {
-    formEvent.preventDefault();
-
-    const name = document.getElementById('bookName').value.trim();
-    const email = document.getElementById('bookEmail').value.trim();
-    const phone = document.getElementById('bookPhone').value.trim();
-    const studentId = document.getElementById('bookStudentId').value.trim();
-    const department = document.getElementById('bookDepartment').value.trim();
-    const year = document.getElementById('bookYear').value;
-    const error = document.getElementById('bookingError');
-
-    if (name === '' || email === '' || phone === '' || studentId === '' || department === '' || year === '') {
-      error.textContent = 'Please complete every field.';
-      return;
-    }
-
-    if (!validEmail(email)) {
-      error.textContent = 'Please enter a valid email address.';
-      return;
-    }
-
-    if (!validPhone(phone)) {
-      error.textContent = 'Phone number must contain exactly 10 digits.';
-      return;
-    }
-
-    if (studentId.length < 5) {
-      error.textContent = 'Please enter a valid Student ID.';
-      return;
-    }
-
-    bookingData = {
-      eventId: event.id,
-      name: name,
-      email: email,
-      phone: phone,
-      studentId: studentId,
-      department: department,
-      year: year
-    };
-
-    saveSession('bookingData', bookingData);
-
-    if (event.price === 0) {
-      registerForEvent(event);
-    } else {
-      showPayment(event);
-    }
-  });
-}
-
-function showPayment(event) {
-  app.innerHTML = `
-    <section class="form-card">
-      <div class="steps">
-        <span>1. Your Details</span>
-        <span class="active">2. Ticket</span>
-      </div>
-      <p class="eyebrow">Demo Payment</p>
-      <h1 class="section-title">Complete Application</h1>
-      <p class="section-subtitle">No real payment is made. This is only a front-end demonstration.</p>
-      <p><b>Event:</b> ${escapeText(event.title)}</p>
-      <p><b>Amount:</b> ₹${event.price}</p>
-      <form id="paymentForm">
-        <label>Card Number
-          <input id="cardNumber" placeholder="16 digit card number">
-        </label>
-        <label>Card Holder Name
-          <input id="cardName" placeholder="Your name">
-        </label>
-        <p id="paymentError" class="error"></p>
-        <div class="button-row">
-          <button type="button" class="secondary-button" data-book-back="${event.id}">Back</button>
-          <button class="primary-button" type="submit">Pay ₹${event.price}</button>
-        </div>
-      </form>
-    </section>`;
-
-  document.getElementById('paymentForm').addEventListener('submit', function (formEvent) {
-    formEvent.preventDefault();
-
-    const cardNumber = document.getElementById('cardNumber').value.replaceAll(' ', '');
-    const cardName = document.getElementById('cardName').value.trim();
-    const error = document.getElementById('paymentError');
-
-    if (cardName === '') {
-      error.textContent = 'Enter card holder name.';
-      return;
-    }
-
-    if (!/^\d{16}$/.test(cardNumber)) {
-      error.textContent = 'Card number must contain 16 digits.';
-      return;
-    }
-
-    registerForEvent(event);
-  });
-}
-
-function registerForEvent(event) {
-  const tickets = getTickets();
-
-  if (availableSeats(event) <= 0) {
-    showToast('Sorry, this event is now full.', true);
-    showDetails(event.id);
-    return;
+  document.getElementById('bookQuantity').value = Math.min(bookingData.quantity || 1, availableSeats(event), 4);
+  function draft() {
+    bookingData = { eventId: event.id, name: document.getElementById('bookName').value.trim(), phone: document.getElementById('bookPhone').value.trim(), studentId: document.getElementById('bookStudentId').value.trim(), department: document.getElementById('bookDepartment').value.trim(), year: document.getElementById('bookYear').value, quantity: Number(document.getElementById('bookQuantity').value) };
+    saveSession('bookingDraft:' + currentUser.email, bookingData);
   }
-
-  const existingTicket = tickets.find(function (ticket) {
-    return ticket.eventId === event.id && ticket.email === bookingData.email && ticket.status === 'active';
+  document.getElementById('bookingOne').addEventListener('input', draft);
+  document.getElementById('bookingOne').addEventListener('submit', async function (click) {
+    click.preventDefault(); draft();
+    if (!validPhone(bookingData.phone)) { document.getElementById('bookingError').textContent = 'Enter a 10-digit phone number.'; return; }
+    await showPayment(event);
   });
-
-  if (existingTicket) {
-    showToast('You are already registered for this event.', true);
-    showTickets();
-    return;
-  }
-
-  const ticket = {
-    ticketId: 'CP-' + Date.now().toString().slice(-7),
-    eventId: event.id,
-    eventTitle: event.title,
-    date: event.date,
-    time: event.time,
-    venue: event.venue,
-    userName: bookingData.name,
-    email: bookingData.email,
-    phone: bookingData.phone,
-    studentId: bookingData.studentId,
-    department: bookingData.department,
-    year: bookingData.year,
-    status: 'active',
-    registeredAt: new Date().toLocaleString('en-IN')
-  };
-
-  tickets.push(ticket);
-  saveTickets(tickets);
-
-  const events = getEvents();
-  const index = events.findIndex(function (item) {
-    return item.id === event.id;
-  });
-
-  events[index].booked++;
-  saveEvents(events);
-
-  removeSession('bookingData');
-  bookingData = {};
-
-  showToast('Application successful. Ticket created.');
-  showTicket(ticket, true);
 }
-
-// ------------------------------------------------------------
+async function showPayment(event) {
+  let pricing;
+  try { pricing = await api('/quote', 'POST', bookingData); } catch (error) { showToast(error.message, true); return; }
+  window.scrollTo(0, 0);
+  app.innerHTML = `<section class="form-card checkout-card"><div class="steps"><span>01 / Your passes</span><span class="active">02 / Review & confirm</span></div><p class="eyebrow">ONE LAST LOOK</p><h1 class="section-title">Good plans, confirmed.</h1><h2>${escapeText(event.title)}</h2><p>${formatDate(event.date)} · ${event.time} · ${escapeText(event.venue)}</p><p>${bookingData.quantity} general admission ${bookingData.quantity === 1 ? 'pass' : 'passes'} · ${escapeText(bookingData.name)}</p><div class="offer-input"><label>Offer code<input id="couponCode" placeholder="Try CAMPUS10" maxlength="30"></label><button id="applyCoupon" class="secondary-button">Apply offer</button></div><p id="couponMessage" role="status"></p><div id="priceSummary"></div><label class="check-label"><input type="checkbox" id="acceptTerms"> I understand this is a demo booking. Guests enter together; cancellation is available before the event starts and before check-in.</label><p class="error" id="checkoutError" role="alert"></p><div class="button-row"><button class="secondary-button" data-book-back="${event.id}">Back</button><button class="primary-button" id="confirmBooking">Confirm demo booking</button></div><p class="upload-note">No money is charged. No payment details are collected.</p></section>`;
+  function renderPricing() {
+    document.getElementById('priceSummary').innerHTML = `<div class="price-line"><span>${pricing.quantity} × ${money(pricing.unitPrice)}</span><b>${money(pricing.subtotal)}</b></div><div class="price-line"><span>Offer savings</span><b>− ${money(pricing.discount)}</b></div><div class="price-line total"><span>Demo total</span><b>${money(pricing.total)}</b></div>`;
+  }
+  renderPricing();
+  document.getElementById('applyCoupon').addEventListener('click', async function (click) {
+    const confirm = document.getElementById('confirmBooking'); confirm.disabled = true; click.target.disabled = true;
+    try {
+      pricing = await api('/quote', 'POST', { ...bookingData, coupon: document.getElementById('couponCode').value.trim() });
+      document.getElementById('couponMessage').textContent = pricing.coupon ? 'CAMPUS10 applied. You saved ' + money(pricing.discount) + '.' : 'Offer removed.';
+      renderPricing();
+    } catch (error) { document.getElementById('couponMessage').textContent = error.message + ' Your previous total is unchanged.'; }
+    click.target.disabled = false; confirm.disabled = false;
+  });
+  document.getElementById('confirmBooking').addEventListener('click', async function (click) {
+    const error = document.getElementById('checkoutError');
+    if (!document.getElementById('acceptTerms').checked) { error.textContent = 'Please acknowledge the booking policy.'; return; }
+    click.target.disabled = true;
+    try {
+      const ticket = await api('/tickets', 'POST', { ...bookingData, coupon: pricing.coupon, expectedTotal: pricing.total });
+      removeSession('bookingDraft:' + currentUser.email); bookingData = {};
+      await refreshData(); showTicket(ticket, true); showToast('You are on the list!');
+    } catch (failure) { error.textContent = failure.message; click.target.disabled = false; }
+  });
+}

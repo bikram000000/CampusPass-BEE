@@ -29,7 +29,7 @@ function validEmail(email) {
 }
 
 function validPhone(phone) {
-  return /^\d{10}$/.test(phone);
+  return phone.length === 10 && phone.split('').every(character => '0123456789'.includes(character));
 }
 
 function escapeText(text) {

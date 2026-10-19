@@ -7,10 +7,12 @@ function showDetails(id) {
   selectedEventId = Number(id);
   saveSession('selectedEventId', selectedEventId);
 
-  const bookButton = currentUser.role === 'student' && availableSeats(event) > 0
+  const open = isBookable(event);
+  const bookButton = currentUser.role === 'student' && availableSeats(event) > 0 && open
     ? `<button class="primary-button" data-book="${event.id}">Apply / Book Event</button>`
     : '';
 
+  window.scrollTo(0, 0);
   app.innerHTML = `
     <button class="secondary-button" data-page="events">← Back to events</button>
     <section class="details-card">
@@ -23,6 +25,7 @@ function showDetails(id) {
 
       <div class="details-content">
         <p>${escapeText(event.description)}</p>
+        ${event.status === 'cancelled' ? '<p class="error">Event cancelled: ' + escapeText(event.cancelReason) + '</p>' : ''}
         <div class="countdown" id="countdown">Loading countdown...</div>
 
         <div class="detail-list">
@@ -33,16 +36,18 @@ function showDetails(id) {
           <div><b>Total Seats</b><br>${event.seats}</div>
           <div><b>Available</b><br>${availableSeats(event)}</div>
           <div><b>Entry Fee</b><br>${event.price === 0 ? 'Free' : '₹' + event.price}</div>
-          <div><b>Status</b><br>${availableSeats(event) > 0 ? 'Registration Open' : 'Fully Booked'}</div>
+          <div><b>Status</b><br>${!open ? 'Registration Closed' : (availableSeats(event) > 0 ? 'Registration Open' : 'Fully Booked')}</div>
         </div>
 
         ${currentUser.role === 'student'
           ? (availableSeats(event) > 0 ? bookButton : '<p class="error">This event is fully booked.</p>')
           : '<p class="section-subtitle">Faculty accounts can create and manage events.</p>'}
+        <section class="event-guide"><h3>Before you go</h3><p>General admission · Up to 4 passes per booking · Valid campus ID required</p><p>Bring your booking reference. All guests on a booking must enter together. You can cancel before the event starts, unless your booking has already checked in.</p><p>Paid events use a simulated checkout. No money is collected.</p><button id="detailSave" class="secondary-button" aria-pressed="${savedIds().includes(event.id)}">${savedIds().includes(event.id) ? '♥ Saved' : '♡ Save'}</button><button class="secondary-button" data-page="help">Booking help</button></section>
       </div>
     </section>`;
 
   startCountdown(event);
+  document.getElementById('detailSave').addEventListener('click', function (click) { toggleSaved(event.id, click.target); });
 }
 
 function startCountdown(event) {

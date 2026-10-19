@@ -6,9 +6,9 @@ function showLogin() {
   profileBox.classList.add('hidden');
 
   app.innerHTML = `
-    <section class="login-card">
-      <p class="eyebrow">Campus event platform</p>
-      <h1>CampusPass</h1>
+    <div class="auth-layout"><aside class="auth-story"><a class="brand" href="/"> <span>CP</span> CampusPass</a><p class="eyebrow">GOOD TIMES. GREAT CONNECTIONS.</p><h2>Your campus.<br>Your people.<br><em>Your next big thing.</em></h2><p>Discover something new. Meet your community. Make memories beyond the classroom.</p><div class="orbit-art"><span>EXPLORE</span><b>Meet.<br>Create.<br>Belong.</b><small>ONE PASS. EVERY POSSIBILITY.</small></div><p class="story-footer">WORKSHOPS &nbsp; / &nbsp; CULTURE &nbsp; / &nbsp; SPORT</p></aside><section class="login-card">
+      <p class="eyebrow">YOUR CAMPUS CONNECTION</p>
+      <h1>Welcome in.</h1>
       <p>Log in or create an account to continue.</p>
 
       <div class="auth-tabs">
@@ -22,10 +22,11 @@ function showLogin() {
       </div>
 
       <form id="authForm"></form>
-    </section>`;
+    </section></div>`;
 
   let mode = 'login';
-  let role = 'student';
+  let role = document.cookie.includes('campusRole=faculty') ? 'faculty' : 'student';
+  document.querySelectorAll('[data-role]').forEach(function (button) { button.classList.toggle('active', button.dataset.role === role); });
 
   function renderAuthForm() {
     const form = document.getElementById('authForm');
@@ -40,7 +41,7 @@ function showLogin() {
         </label>
         <p id="authError" class="error"></p>
         <button class="primary-button" type="submit">Log in as ${role === 'student' ? 'Student' : 'Faculty'}</button>
-        <p class="auth-note">Demo faculty: faculty@campus.edu / 123456</p>`;
+        <p class="auth-note">Demo: student@campus.edu or faculty@campus.edu<br>Password: 123456 · Choose the matching role</p>`;
     } else {
       form.innerHTML = `
         <label>Full Name
@@ -58,111 +59,35 @@ function showLogin() {
         <label>Confirm Password
           <input id="confirmPassword" type="password" placeholder="Type password again">
         </label>
-        <p id="authError" class="error"></p>
+        ${role === 'faculty' ? '<label>Faculty invitation code<input id="facultyCode" type="password" required></label>' : ''}
+        <p id="authError" class="error" role="alert"></p>
         <button class="primary-button" type="submit">Create ${role === 'student' ? 'Student' : 'Faculty'} Account</button>`;
     }
 
-    form.addEventListener('submit', handleAuth);
+    form.onsubmit = handleAuth;
   }
 
-  function handleAuth(event) {
+  async function handleAuth(event) {
     event.preventDefault();
-
-    const email = document.getElementById('authEmail').value.trim().toLowerCase();
-    const password = document.getElementById('authPassword').value;
     const error = document.getElementById('authError');
-
-    if (email === '' || password === '') {
-      error.textContent = 'Please fill email and password.';
-      return;
+    const button = event.target.querySelector('button[type="submit"]');
+    const body = { email: document.getElementById('authEmail').value.trim(), password: document.getElementById('authPassword').value, role: role };
+    if (mode === 'signup') {
+      body.name = document.getElementById('authName').value.trim();
+      body.department = document.getElementById('authDepartment').value.trim();
+      if (body.password !== document.getElementById('confirmPassword').value) { error.textContent = 'Passwords do not match.'; return; }
+      if (role === 'faculty') body.facultyCode = document.getElementById('facultyCode').value;
     }
-
-    if (!validEmail(email)) {
-      error.textContent = 'Enter a valid email address.';
-      return;
-    }
-
-    if (password.length < 6) {
-      error.textContent = 'Password must have at least 6 characters.';
-      return;
-    }
-
-    const accounts = getAccounts();
-
-    if (mode === 'login') {
-      const account = accounts.find(function (item) {
-        return item.email === email && item.role === role;
-      });
-
-      if (!account) {
-        error.textContent = 'No account found for this role and email.';
-        return;
-      }
-
-      if (account.password !== password) {
-        error.textContent = 'Incorrect password.';
-        return;
-      }
-
-      currentUser = {
-        name: account.name,
-        email: account.email,
-        department: account.department,
-        role: account.role
-      };
-      saveData('campusPassUser', currentUser);
+    button.disabled = true;
+    error.textContent = '';
+    try {
+      const result = await api('/auth/' + mode, 'POST', body);
+      currentUser = result.user;
+      await refreshData();
+      document.cookie = 'campusRole=' + role + '; Max-Age=2592000; Path=/; SameSite=Strict';
       showApp('home');
-      return;
-    }
-
-    const name = document.getElementById('authName').value.trim();
-    const department = document.getElementById('authDepartment').value.trim();
-    const confirmPassword = document.getElementById('confirmPassword').value;
-
-    if (name.length < 2) {
-      error.textContent = 'Name must contain at least 2 characters.';
-      return;
-    }
-
-    if (department === '') {
-      error.textContent = 'Please enter your course or department.';
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      error.textContent = 'Passwords do not match.';
-      return;
-    }
-
-    const alreadyExists = accounts.some(function (item) {
-      return item.email === email;
-    });
-
-    if (alreadyExists) {
-      error.textContent = 'An account with this email already exists.';
-      return;
-    }
-
-    const newAccount = {
-      name: name,
-      email: email,
-      department: department,
-      role: role,
-      password: password
-    };
-
-    accounts.push(newAccount);
-    saveAccounts(accounts);
-
-    currentUser = {
-      name: name,
-      email: email,
-      department: department,
-      role: role
-    };
-    saveData('campusPassUser', currentUser);
-    showToast('Account created successfully.');
-    showApp('home');
+    } catch (failure) { error.textContent = failure.message; }
+    button.disabled = false;
   }
 
   document.querySelectorAll('[data-auth]').forEach(function (button) {
@@ -189,7 +114,6 @@ function showLogin() {
 }
 
 function showApp(page) {
-  createDemoEvents();
   navbar.classList.remove('hidden');
   mobileNav.classList.remove('hidden');
 
