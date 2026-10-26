@@ -1,4 +1,8 @@
-// Lectures 53-57: HTTP, Express, middleware, REST, validation and authentication.
+// Compatibility entry point. The active MongoDB implementation is server-mongodb.js.
+if (require.main === module) {
+  require('./server-mongodb');
+} else {
+// Legacy in-memory implementation retained only for earlier CA2 reference; it is not started.
 const http = require('http');
 const express = require('express');
 const session = require('express-session');
@@ -211,3 +215,4 @@ async function start() {
   http.createServer(app).listen(port, '127.0.0.1', function () { console.log('CampusPass: http://localhost:' + port); });
 }
 start();
+}

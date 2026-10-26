@@ -51,7 +51,7 @@ function showHelp() {
     ['How do I enter?', 'Open My Bookings and show your pass and campus ID at the venue. All guests enter together. Faculty can verify the booking reference and check in your group.'],
     ['Can I cancel?', 'You can cancel the entire booking before the event begins and before check-in. All passes are released. No real money was charged, so there is no real refund.'],
     ['What if the organizer cancels or updates an event?', 'Cancelled bookings show the reason in My Bookings. Date, time and venue changes appear on existing passes after refresh. There are no email or push alerts in this version.'],
-    ['Where is my data stored?', 'Accounts, events, bookings and sessions are held in server memory and reset on server restart. Your wishlist and sort preference stay in this browser; unfinished booking details stay in the current browser tab until logout.'],
+    ['Where is my data stored?', 'MongoDB stores accounts, events, bookings, wishlists and login sessions, so they remain after a server restart. Your sort preference stays in this browser; unfinished booking details stay in the current browser tab until logout.'],
     ['Can I choose a seat?', 'This version uses general admission. Reserved seating and timed seat holds are planned for a later backend stage.'],
     ['Need event-specific help?', 'Check the organizer and venue on the event details screen and contact your campus activities office. This demo does not send support messages.']
   ];

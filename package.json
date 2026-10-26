@@ -4,15 +4,35 @@
   "private": true,
   "description": "Campus event platform using lectures 1-30, 53-57, sessions and cookies",
   "scripts": {
-    "start": "node --env-file=.env server.js",
-    "dev": "nodemon --exec \"node --env-file=.env\" server.js",
+    "start": "node --env-file=.env server-mongodb.js",
+    "dev": "nodemon --exec \"node --env-file=.env\" server-mongodb.js",
     "test": "node --env-file=.env tests/api-test.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "connect-mongo": "^5.1.0",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0"
   },
-  "devDependencies": { "nodemon": "^3.1.10" }
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "main": "server-data.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bikram000000/CampusPass-BEE.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/bikram000000/CampusPass-BEE/issues"
+  },
+  "homepage": "https://github.com/bikram000000/CampusPass-BEE#readme"
 }

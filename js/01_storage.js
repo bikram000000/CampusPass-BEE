@@ -1,4 +1,4 @@
-// 1. STORAGE - localStorage, sessionStorage and JSON
+// Browser storage is intentionally limited to UI preference and an unfinished booking draft.
 // ------------------------------------------------------------
 function getData(key, defaultValue) {
   try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : defaultValue; }
@@ -25,6 +25,7 @@ function removeSession(key) {
 // API results are kept in memory for the DOM rendering functions.
 let eventCache = [];
 let ticketCache = [];
+let savedCache = [];
 function getEvents() { return eventCache; }
 function getTickets() { return ticketCache; }
 async function api(path, method = 'GET', body) {
@@ -33,12 +34,14 @@ async function api(path, method = 'GET', body) {
   const response = await fetch('/api' + path, options);
   const data = await response.json();
   if (!response.ok) {
-    if (response.status === 401 && currentUser) { currentUser = null; eventCache = []; ticketCache = []; showLogin(); }
+    if (response.status === 401 && currentUser) { currentUser = null; eventCache = []; ticketCache = []; savedCache = []; showLogin(); }
     throw new Error(data.message || 'Request failed.');
   }
   return data;
 }
 async function refreshData() {
-  eventCache = await api('/events');
-  ticketCache = await api('/tickets');
+  const result = await Promise.all([api('/events'), api('/tickets'), api('/wishlist')]);
+  eventCache = result[0];
+  ticketCache = result[1];
+  savedCache = result[2];
 }

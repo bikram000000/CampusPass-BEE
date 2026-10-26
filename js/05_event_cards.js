@@ -1,18 +1,32 @@
-// Discovery helpers: arrays, objects, DOM and localStorage (lectures 1–24).
+// Discovery helpers: arrays, objects, DOM and MongoDB-backed wishlist data.
 function isBookable(event) { return event.status !== 'cancelled' && new Date(event.date + 'T' + event.time) > new Date(); }
 function money(value) { return '₹' + Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 }); }
-function savedIds() { return getData('campusSaved:' + currentUser.email, []); }
-function toggleSaved(id, button) {
-  let ids = savedIds();
-  ids = ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id];
-  saveData('campusSaved:' + currentUser.email, ids);
-  button.textContent = ids.includes(id) ? '♥ Saved' : '♡ Save';
-  button.setAttribute('aria-pressed', String(ids.includes(id)));
+function savedIds() { return savedCache; }
+async function toggleSaved(id, button) {
+  const hasSaved = savedIds().includes(id);
+  button.disabled = true;
+  try {
+    if (hasSaved) {
+      await api('/wishlist/' + id, 'DELETE');
+      savedCache = savedCache.filter(item => item !== id);
+    } else {
+      await api('/wishlist/' + id, 'POST');
+      savedCache = [...savedCache, id];
+    }
+  } catch (error) {
+    showToast(error.message, true);
+    button.disabled = false;
+    return;
+  }
+  const nowSaved = savedIds().includes(id);
+  button.textContent = nowSaved ? '♥ Saved' : '♡ Save';
+  button.setAttribute('aria-pressed', String(nowSaved));
   document.querySelectorAll('[data-save-id="' + id + '"]').forEach(function (item) {
-    item.textContent = ids.includes(id) ? '♥ Saved' : '♡ Save';
-    item.setAttribute('aria-pressed', String(ids.includes(id)));
+    item.textContent = nowSaved ? '♥ Saved' : '♡ Save';
+    item.setAttribute('aria-pressed', String(nowSaved));
+    item.disabled = false;
   });
-  showToast(ids.includes(id) ? 'Added to your wishlist.' : 'Removed from your wishlist.');
+  showToast(nowSaved ? 'Added to your wishlist.' : 'Removed from your wishlist.');
   if (document.getElementById('savedList')) showSaved();
 }
 function createEventCard(event) {
@@ -42,6 +56,6 @@ function displayEvents(events, container) {
   events.forEach(event => container.appendChild(createEventCard(event)));
 }
 function showSaved() {
-  app.innerHTML = '<p class="eyebrow">YOUR SHORTLIST</p><h1 class="section-title">Worth making time for.</h1><p class="section-subtitle">Saved on this browser, just for your account. Tap Saved to remove an event.</p><div id="savedList" class="event-grid"></div>';
+  app.innerHTML = '<p class="eyebrow">YOUR SHORTLIST</p><h1 class="section-title">Worth making time for.</h1><p class="section-subtitle">Saved to your CampusPass account. Tap Saved to remove an event.</p><div id="savedList" class="event-grid"></div>';
   displayEvents(getEvents().filter(event => savedIds().includes(event.id)), document.getElementById('savedList'));
 }

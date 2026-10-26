@@ -8,7 +8,7 @@ CampusPass is a campus event discovery and booking application inspired by famil
 - Home page with upcoming events, free experiences, categories and the current demo offer.
 - Search by event, venue or organizer; combine category, date, venue, price and availability filters.
 - Sort by date, price, title or available passes; reset filters; clear empty states.
-- Account-specific browser wishlist with saved-state controls.
+- Account-specific MongoDB wishlist with saved-state controls.
 - Event descriptions, availability, countdown, venue, date, time and entry/cancellation policies.
 - General admission group booking for 1–4 people, with one active booking per student per event.
 - Student details and a tab-local booking draft that survives leaving and reopening the event's booking screen.
@@ -37,7 +37,7 @@ Authentication, role/ownership checks, validation, server-calculated totals, boo
 
 Payments, discounts and sales figures represent a demo only. Tickets are general admission; the booking reference is a lookup value, not a scannable QR code. All guests must enter together. Check-in is intentionally available to the organizer for classroom demonstrations without requiring the event date to arrive.
 
-Accounts, events, bookings and sessions use arrays/objects and the default session memory store. They reset when the server restarts. Browser wishlist IDs and preferences remain local; a deleted event disappears from the wishlist when next loaded. No data migration from the older CA1 browser accounts is performed.
+MongoDB stores accounts, events, bookings, wishlists, counters and server-side sessions, so they survive server restarts. Browser localStorage keeps only the sorting preference; sessionStorage keeps the selected category and an unfinished booking draft for the current tab. A deleted event disappears from the MongoDB-backed wishlist when next loaded.
 
 ## Why the features fit the syllabus
 
@@ -45,7 +45,8 @@ Accounts, events, bookings and sessions use arrays/objects and the default sessi
 | --- | --- |
 | Discovery, filtering, dashboard totals | Arrays, objects, filter, sort, reduce; lectures 9–16 |
 | Cards, forms, booking history, FAQ | HTML/CSS, DOM, events, validation; lectures 17–22 |
-| Wishlist, sorting, booking drafts | localStorage/sessionStorage and JSON; lecture 23 |
+| Sort preference and booking drafts | localStorage/sessionStorage and JSON; lecture 23 |
+| Main application records and sessions | MongoDB collections and Mongo-backed Express session store |
 | Screens and payloads | Template literals, spread, destructuring; lecture 24 |
 | API calls and error states | Fetch, Promises, async/await; lectures 25–30 |
 | Server and local asset routing | HTTP, Express, request/response; lectures 53 and 55 |
@@ -55,19 +56,19 @@ Accounts, events, bookings and sessions use arrays/objects and the default sessi
 | Login continuity and role preference | Server sessions, HttpOnly session cookie, readable role cookie |
 | Motion and responsive layout | CSS only |
 
-No additional application dependency was introduced for the expanded features. The application has no React, database, ORM, file uploads, WebSockets, payment SDK or QR library.
+Mongoose models and `connect-mongo` are used for persistent application and session data. The application has no React, file uploads, WebSockets, payment SDK or QR library.
 
 ## Later backend stages
 
 These are intentionally not implemented yet:
 
-1. Persistent database models, migrations, relationships and transactions.
+1. Formal schema validation, migrations, richer relationships and multi-document transactions.
 2. Real payment gateway checkout, verified webhooks, refunds and reconciliation.
 3. Reserved-seat maps with expiring seat holds and concurrency across multiple servers.
 4. Verified email/OTP, password recovery, email/SMS tickets and notifications.
 5. Uploaded event posters, cloud storage and image processing.
 6. Signed QR tickets and scanner/camera check-in.
-7. Production session storage, rate limiting, audit trails, monitoring and deployment hardening.
+7. Rate limiting, audit trails, monitoring and deployment hardening.
 8. Moderated reviews, organizer approval workflows, multi-campus administration and richer analytics.
 
 Some simplified versions of later features could be drawn with HTML/CSS; they are deferred here so the booking experience does not imply infrastructure that is not present.
@@ -83,8 +84,8 @@ Some simplified versions of later features could be drawn with HTML/CSS; they ar
 7. Open My Events → Annual Cultural Fest → Attendees & check-in; find the booking and check in the group.
 8. Try a second check-in or student cancellation after check-in to demonstrate validation.
 9. Use a separate event to demonstrate organizer cancellation and the cancellation reason in student history.
-10. Restart the server to explain the intentional in-memory data limitation.
+10. Restart the server, sign in again and show that MongoDB preserved the accounts, events and bookings.
 
 ## Verification
 
-`npm test` runs 47 API checks, including invalid credentials, session cookies, role/ownership restrictions, CRUD, malformed inputs, group limits, discount calculations, price tampering, capacity conflicts, attendee privacy, duplicate check-in, cancellation propagation, profile validation and concurrent last-pass requests. Tests create unique demo accounts and clean up their events; accounts and test booking history reset on server restart.
+`npm test` runs 47 API checks, including invalid credentials, session cookies, role/ownership restrictions, CRUD, malformed inputs, group limits, discount calculations, price tampering, capacity conflicts, attendee privacy, duplicate check-in, cancellation propagation, profile validation and concurrent last-pass requests. Tests create unique demo accounts and clean up their events; accounts and history remain in MongoDB until removed.
